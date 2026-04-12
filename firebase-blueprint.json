@@ -1,0 +1,39 @@
+{
+  "entities": {
+    "Employee": {
+      "title": "Employee",
+      "description": "Staff member information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string", "enum": ["MANAGER", "STAFF"] },
+        "leaveDates": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["id", "name", "role"]
+    },
+    "Shift": {
+      "title": "Shift",
+      "description": "A scheduled shift assignment",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string", "format": "date" },
+        "type": { "type": "string", "enum": ["DAY", "NIGHT"] },
+        "employeeId": { "type": "string" },
+        "isLocked": { "type": "boolean" },
+        "isContinuous": { "type": "boolean" }
+      },
+      "required": ["date", "type"]
+    }
+  },
+  "firestore": {
+    "/employees/{employeeId}": {
+      "schema": "Employee",
+      "description": "Collection of employees"
+    },
+    "/shifts/{shiftId}": {
+      "schema": "Shift",
+      "description": "Collection of shifts. shiftId is usually date_type (e.g., 2026-04-11_DAY)"
+    }
+  }
+}

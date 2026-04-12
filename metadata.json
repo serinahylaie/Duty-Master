@@ -1,0 +1,5 @@
+{
+  "name": "Duty Master - 智慧值班排班系統",
+  "description": "專業自動化排班工具，內建勞基法與自定義約束邏輯，支援 15 人輪值、日夜班配置與連續夜班規則。",
+  "requestFramePermissions": []
+}
