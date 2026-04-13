@@ -41,7 +41,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -60,6 +60,9 @@ import {
   googleProvider, 
   signInWithPopup, 
   signOut, 
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signInAnonymously,
   collection, 
   doc, 
   setDoc, 
@@ -105,6 +108,13 @@ export default function App() {
   const [isConfirmClearOpen, setIsConfirmClearOpen] = useState(false);
   const [employeeSearch, setEmployeeSearch] = useState('');
   const [isExporting, setIsExporting] = useState(false);
+
+  // Auth Form State
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
 
   // Taiwan Holidays 2026
   const TAIWAN_HOLIDAYS_2026: Record<string, string> = {
@@ -189,11 +199,52 @@ export default function App() {
     setShifts(currentMonthShifts);
   }, [currentMonthShifts]);
 
-  const handleLogin = async () => {
+  const handleGoogleLogin = async () => {
     try {
       await signInWithPopup(auth, googleProvider);
-    } catch (error) {
-      toast.error("登入失敗");
+    } catch (error: any) {
+      console.error("Login failed:", error);
+      toast.error("Google 登入失敗，請確認網域授權或嘗試其他方式");
+    }
+  };
+
+  const handleEmailAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError(null);
+    setIsAuthenticating(true);
+    try {
+      if (isSignUp) {
+        await createUserWithEmailAndPassword(auth, email, password);
+        toast.success("帳號註冊成功");
+      } else {
+        await signInWithEmailAndPassword(auth, email, password);
+        toast.success("登入成功");
+      }
+    } catch (error: any) {
+      console.error("Auth failed:", error);
+      let msg = "認證失敗";
+      if (error.code === 'auth/user-not-found') msg = "找不到此用戶";
+      if (error.code === 'auth/wrong-password') msg = "密碼錯誤";
+      if (error.code === 'auth/email-already-in-use') msg = "此信箱已被註冊";
+      if (error.code === 'auth/weak-password') msg = "密碼強度不足 (至少 6 位)";
+      if (error.code === 'auth/invalid-email') msg = "無效的信箱格式";
+      setAuthError(msg);
+      toast.error(msg);
+    } finally {
+      setIsAuthenticating(false);
+    }
+  };
+
+  const handleGuestLogin = async () => {
+    setIsAuthenticating(true);
+    try {
+      await signInAnonymously(auth);
+      toast.success("以訪客身份登入");
+    } catch (error: any) {
+      console.error("Guest login failed:", error);
+      toast.error("訪客登入失敗");
+    } finally {
+      setIsAuthenticating(false);
     }
   };
 
@@ -547,6 +598,124 @@ export default function App() {
     return null;
   };
 
+  if (!user && isAuthReady) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <Toaster position="top-center" />
+        <Card className="w-full max-w-md shadow-xl border-gray-200">
+          <CardHeader className="text-center space-y-2">
+            <div className="mx-auto bg-indigo-600 w-16 h-16 rounded-2xl flex items-center justify-center text-white mb-2 shadow-lg shadow-indigo-200">
+              <CalendarIcon size={32} />
+            </div>
+            <CardTitle className="text-2xl font-bold text-gray-900">Duty Master</CardTitle>
+            <CardDescription>
+              智慧值班排班系統 - 請登入以開始使用
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <Tabs defaultValue="email" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-4">
+                <TabsTrigger value="email">信箱登入</TabsTrigger>
+                <TabsTrigger value="google">Google 登入</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="email" className="space-y-4">
+                <form onSubmit={handleEmailAuth} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">電子信箱</Label>
+                    <Input 
+                      id="email" 
+                      type="email" 
+                      placeholder="example@company.com" 
+                      required 
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="password">密碼</Label>
+                    <Input 
+                      id="password" 
+                      type="password" 
+                      placeholder="••••••••" 
+                      required 
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
+                  </div>
+                  {authError && (
+                    <div className="text-red-500 text-xs flex items-center gap-1">
+                      <AlertCircle size={12} />
+                      {authError}
+                    </div>
+                  )}
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-indigo-600 hover:bg-indigo-700"
+                    disabled={isAuthenticating}
+                  >
+                    {isAuthenticating ? "處理中..." : (isSignUp ? "註冊帳號" : "登入")}
+                  </Button>
+                </form>
+                <div className="text-center">
+                  <button 
+                    className="text-xs text-indigo-600 hover:underline"
+                    onClick={() => setIsSignUp(!isSignUp)}
+                  >
+                    {isSignUp ? "已有帳號？點此登入" : "還沒有帳號？點此註冊"}
+                  </button>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="google" className="space-y-4">
+                <Button 
+                  variant="outline" 
+                  className="w-full py-6 gap-3 border-gray-200 hover:bg-gray-50 text-gray-700"
+                  onClick={handleGoogleLogin}
+                  disabled={isAuthenticating}
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24">
+                    <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" />
+                    <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                  </svg>
+                  使用 Google 帳號登入
+                </Button>
+                <p className="text-[10px] text-gray-400 text-center">
+                  * 若公司網路限制 Google 登入，請改用「信箱登入」或「訪客登入」
+                </p>
+              </TabsContent>
+            </Tabs>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-gray-200"></span>
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-gray-400">或</span>
+              </div>
+            </div>
+
+            <Button 
+              variant="ghost" 
+              className="w-full text-gray-500 hover:text-indigo-600 hover:bg-indigo-50"
+              onClick={handleGuestLogin}
+              disabled={isAuthenticating}
+            >
+              訪客登入 (免帳號直接試用)
+            </Button>
+          </CardContent>
+          <CardFooter className="bg-gray-50/50 border-t border-gray-100 py-3">
+            <p className="text-[10px] text-gray-400 text-center w-full">
+              © 2026 Duty Master. Secure Cloud Scheduling.
+            </p>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <TooltipProvider>
       <div className="min-h-screen bg-[#F8F9FA] text-[#1A1A1A] font-sans flex flex-col">
@@ -577,18 +746,14 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-3">
-            {user ? (
+            {user && (
               <div className="flex items-center gap-3">
                 <div className="flex flex-col items-end">
                   <span className="text-[10px] font-medium text-gray-500">已登入</span>
-                  <span className="text-sm font-bold text-gray-900">{user.displayName || user.email}</span>
+                  <span className="text-sm font-bold text-gray-900">{user.displayName || user.email || (user.isAnonymous ? "訪客" : "用戶")}</span>
                 </div>
                 <Button variant="outline" size="sm" onClick={handleLogout} className="h-8 text-xs">登出</Button>
               </div>
-            ) : (
-              <Button variant="default" size="sm" onClick={handleLogin} className="h-8 text-xs bg-indigo-600 hover:bg-indigo-700">
-                Google 登入
-              </Button>
             )}
             <Dialog>
               <DialogTrigger render={
