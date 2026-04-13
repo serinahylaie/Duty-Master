@@ -137,6 +137,8 @@ export default function App() {
     '2026-10-10': '國慶日',
   };
 
+  const isGuest = user?.isAnonymous;
+
   const getHoliday = (date: Date) => {
     return TAIWAN_HOLIDAYS_2026[format(date, 'yyyy-MM-dd')];
   };
@@ -782,11 +784,12 @@ export default function App() {
                 </div>
               </DialogContent>
             </Dialog>
-            <Dialog open={isConfirmClearOpen} onOpenChange={setIsConfirmClearOpen}>
+            <Dialog open={isConfirmClearOpen} onOpenChange={(open) => !isGuest && setIsConfirmClearOpen(open)}>
               <DialogTrigger render={
                 <Button 
                   variant="outline" 
                   className="gap-2 border-gray-200 hover:bg-red-50 hover:text-red-600 text-gray-600 transition-colors"
+                  disabled={isGuest}
                 >
                   <Trash2 size={18} />
                   清除未鎖定
@@ -821,7 +824,7 @@ export default function App() {
             <Button 
               className="gap-2 bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-100"
               onClick={handleAutoSchedule}
-              disabled={isSolving}
+              disabled={isSolving || isGuest}
             >
               {isSolving ? <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }}><Wand2 size={18} /></motion.div> : <Wand2 size={18} />}
               自動排班
@@ -845,27 +848,29 @@ export default function App() {
                       <CardTitle className="text-sm font-bold flex items-center justify-between">
                         員工管理 ({employees.length})
                         <div className="flex items-center gap-1">
-                          <label className="cursor-pointer">
+                          <label className={cn("cursor-pointer", isGuest && "opacity-50 cursor-not-allowed")}>
                             <Input 
                               type="file" 
                               accept=".csv" 
                               className="hidden" 
                               onChange={handleImportCSV}
+                              disabled={isGuest}
                             />
                             <Tooltip>
                               <TooltipTrigger render={
-                                <div className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors">
+                                <div className={cn("p-2 text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors", isGuest && "pointer-events-none")}>
                                   <BarChart3 size={18} />
                                 </div>
                               } />
-                              <TooltipContent>匯入員工 CSV</TooltipContent>
+                              <TooltipContent>{isGuest ? "訪客無法匯入" : "匯入員工 CSV"}</TooltipContent>
                             </Tooltip>
                           </label>
                           <Button 
                             variant="ghost" 
                             size="icon" 
                             className="h-8 w-8 text-indigo-600"
-                            onClick={() => setIsAddingEmployee(!isAddingEmployee)}
+                            onClick={() => !isGuest && setIsAddingEmployee(!isAddingEmployee)}
+                            disabled={isGuest}
                           >
                             <Plus size={18} />
                           </Button>
@@ -954,12 +959,13 @@ export default function App() {
                                       variant="ghost" 
                                       size="icon" 
                                       className={cn("h-8 w-8", emp.role === 'MANAGER' ? "text-amber-600" : "text-gray-400")}
-                                      onClick={() => toggleRole(emp.id)}
+                                      onClick={() => !isGuest && toggleRole(emp.id)}
+                                      disabled={isGuest}
                                     >
                                       <Settings size={14} />
                                     </Button>
                                   } />
-                                  <TooltipContent>切換職位</TooltipContent>
+                                  <TooltipContent>{isGuest ? "訪客無法編輯" : "切換職位"}</TooltipContent>
                                 </Tooltip>
                                 <Tooltip>
                                   <TooltipTrigger render={
@@ -967,12 +973,13 @@ export default function App() {
                                       variant="ghost" 
                                       size="icon" 
                                       className="h-8 w-8 text-red-400 hover:text-red-600 hover:bg-red-50"
-                                      onClick={() => handleDeleteEmployee(emp.id)}
+                                      onClick={() => !isGuest && handleDeleteEmployee(emp.id)}
+                                      disabled={isGuest}
                                     >
                                       <Trash2 size={14} />
                                     </Button>
                                   } />
-                                  <TooltipContent>刪除員工</TooltipContent>
+                                  <TooltipContent>{isGuest ? "訪客無法刪除" : "刪除員工"}</TooltipContent>
                                 </Tooltip>
                               </div>
                             </div>
@@ -1198,11 +1205,18 @@ export default function App() {
             </DialogHeader>
             
             <div className="space-y-4 py-4">
+              {isGuest && (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-xs flex items-center gap-2 mb-2">
+                  <AlertCircle size={14} />
+                  訪客模式僅供瀏覽，無法修改班表。
+                </div>
+              )}
               <div className="grid grid-cols-1 gap-3">
                 <Button 
                   variant={getShiftForEmployee(selectedShift?.date || '', selectedShift?.employeeId || '')?.type === 'DAY' ? 'default' : 'outline'}
                   className={cn("justify-start gap-3 h-12", getShiftForEmployee(selectedShift?.date || '', selectedShift?.employeeId || '')?.type === 'DAY' && "bg-orange-600 hover:bg-orange-700")}
                   onClick={() => selectedShift && handleManualAssign(selectedShift.date, 'DAY', selectedShift.employeeId)}
+                  disabled={isGuest}
                 >
                   <Sun size={18} /> 日班 (D)
                 </Button>
@@ -1210,6 +1224,7 @@ export default function App() {
                   variant={getShiftForEmployee(selectedShift?.date || '', selectedShift?.employeeId || '')?.type === 'NIGHT' ? 'default' : 'outline'}
                   className={cn("justify-start gap-3 h-12", getShiftForEmployee(selectedShift?.date || '', selectedShift?.employeeId || '')?.type === 'NIGHT' && "bg-indigo-600 hover:bg-indigo-700")}
                   onClick={() => selectedShift && handleManualAssign(selectedShift.date, 'NIGHT', selectedShift.employeeId)}
+                  disabled={isGuest}
                 >
                   <Moon size={18} /> 夜班 (N)
                 </Button>
@@ -1217,6 +1232,7 @@ export default function App() {
                   variant="ghost"
                   className="justify-start gap-3 h-12 text-gray-500"
                   onClick={() => selectedShift && handleManualAssign(selectedShift.date, 'NONE', selectedShift.employeeId)}
+                  disabled={isGuest}
                 >
                   <Trash2 size={18} /> 清除排班
                 </Button>
@@ -1227,6 +1243,7 @@ export default function App() {
                   id="lock-shift" 
                   checked={shifts.find(s => s.date === selectedShift?.date && s.employeeId === selectedShift?.employeeId)?.isLocked}
                   onCheckedChange={() => selectedShift && toggleLock(selectedShift.date, selectedShift.employeeId)}
+                  disabled={isGuest}
                 />
                 <Label htmlFor="lock-shift" className="text-sm">鎖定此排班 (自動排班時不變動)</Label>
               </div>
