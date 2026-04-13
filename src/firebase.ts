@@ -1,5 +1,13 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
+import { 
+  getAuth, 
+  GoogleAuthProvider, 
+  signInWithPopup, 
+  signOut, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signInAnonymously 
+} from 'firebase/auth';
 import { getFirestore, collection, doc, setDoc, getDoc, getDocs, query, where, onSnapshot, deleteDoc, writeBatch } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 
@@ -11,6 +19,9 @@ export const googleProvider = new GoogleAuthProvider();
 export { 
   signInWithPopup, 
   signOut, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signInAnonymously,
   collection, 
   doc, 
   setDoc, 
