@@ -8,6 +8,10 @@ service cloud.firestore {
     function isAuthenticated() {
       return request.auth != null;
     }
+
+    function isNotGuest() {
+      return isAuthenticated() && request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
     
     function isAdmin() {
       return isAuthenticated() && 
@@ -21,12 +25,12 @@ service cloud.firestore {
     
     match /employees/{employeeId} {
       allow read: if isAuthenticated();
-      allow write: if isAuthenticated(); // For simplicity in this app, all logged in users can manage employees
+      allow write: if isNotGuest();
     }
     
     match /shifts/{shiftId} {
       allow read: if isAuthenticated();
-      allow write: if isAuthenticated();
+      allow write: if isNotGuest();
     }
 
     match /users/{userId} {
