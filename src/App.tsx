@@ -36,7 +36,8 @@ import {
   Wand2,
   BarChart3,
   Moon,
-  Sun
+  Sun,
+  HelpCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -848,6 +849,41 @@ export default function App() {
                       <CardTitle className="text-sm font-bold flex items-center justify-between">
                         員工管理 ({employees.length})
                         <div className="flex items-center gap-1">
+                          <Dialog>
+                            <DialogTrigger render={
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-indigo-600">
+                                <HelpCircle size={16} />
+                              </Button>
+                            } />
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>匯入員工 CSV 格式說明</DialogTitle>
+                                <DialogDescription>
+                                  請上傳符合以下格式的 CSV 檔案，系統將自動批次新增員工。
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="space-y-4 py-4">
+                                <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 font-mono text-xs">
+                                  <p className="text-gray-400 mb-1"># 檔案內容範例 (第一行為標題可省略)</p>
+                                  <p>姓名,職位</p>
+                                  <p>張小明,一般員工</p>
+                                  <p>李大華,主管</p>
+                                  <p>王中平,STAFF</p>
+                                  <p>陳美玲,MANAGER</p>
+                                </div>
+                                <div className="space-y-2 text-sm">
+                                  <p className="font-bold text-indigo-600">欄位說明：</p>
+                                  <ul className="list-disc list-inside space-y-1 text-gray-600">
+                                    <li><span className="font-medium text-gray-900">姓名</span>：員工的顯示名稱（必填）。</li>
+                                    <li><span className="font-medium text-gray-900">職位</span>：可填寫「主管」、「一般員工」或英文「MANAGER」、「STAFF」。若留空預設為一般員工。</li>
+                                  </ul>
+                                </div>
+                                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-xs">
+                                  注意：匯入時會自動跳過第一行標題列（若包含「姓名」或「name」關鍵字）。
+                                </div>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
                           <label className={cn("cursor-pointer", isGuest && "opacity-50 cursor-not-allowed")}>
                             <Input 
                               type="file" 
